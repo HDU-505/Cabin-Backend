@@ -1,0 +1,2 @@
+Logs\n*.log\n\n# Build\n/build/\n/target/\n\n# IDE\n.idea/\n.vscode/\n*.iml\n\n# System\n.DS_Store\nThumbs.db\n
+.idea/
