@@ -1,0 +1,84 @@
+server:
+  port: 8080
+spring:
+  profiles:
+    active: dev
+  application:
+    name: NeuroStudent-WorkStation-Admin
+  mvc:
+    servlet:
+      load-on-startup: 0
+      multipart:
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 500MB
+      max-request-size: 500MB
+  #数据库配置
+  datasource:
+    url: jdbc:mysql://47.111.145.107:3306/neurostudent?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=Asia/Shanghai&useSSL=false&characterEncoding=utf8
+    username: root
+    password: 123321
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      async-init: true
+      initial-size: 5
+      max-active: 20
+      min-idle: 5
+      max-wait: 60000
+      validationQuery: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+      filter:
+        stat:
+          enabled: true
+          db-type: mysql
+          log-slow-sql: true
+          slow-sql-millis: 10
+      filters: stat,wall,slf4j
+      aop-patterns: com.hdu.controller.*,com.hdu.service.*,com.hdu.mapper.*
+  # redis配置
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password:
+
+#  # nacos配置
+#  cloud:
+#    nacos:
+#      discovery:
+#        server-addr: 127.0.0.1:8848
+
+
+# mybatis配置
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  mapper-locations: classpath:mapper/*.xml
+
+
+# 日志配置
+logging:
+  config: classpath:logback.xml
+  level:
+    com.zhou.test: info
+    org.springframework: warn
+
+mqtt:
+  hostUrl: tcp://127.0.0.1:1883
+  username: admin
+  password: admin
+  client-id: MQTT-CLIENT-DEV-2
+  cleanSession: true
+  reconnect: true
+  timeout: 100
+  keepAlive: 100
+  defaultTopic:
+  serverTopic:
+  isOpen: true
+  qos: 0
+
