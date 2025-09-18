@@ -1,0 +1,57 @@
+CREATE DATABASE neurostudent WITH PRECISION 'ms';
+
+CREATE TABLE eog (
+        id STRING,
+	experiment_id STRING,
+	cnt STRING,
+        fpogx STRING,
+        fpogy STRING,
+        fpogs STRING,
+        fpogd STRING,
+        fpogid STRING,
+        fpogv STRING,
+        lpogx STRING,
+        lpogy STRING,
+        lpogv STRING,
+        rpogx STRING,
+        rpogy STRING,
+        rpogv STRING,
+	num STRING
+);
+
+CREATE TABLE gsr (
+        id STRING,
+	experiment_id STRING,
+	data DOUBLE,
+	num STRING
+);
+
+CREATE TABLE hr (
+        id STRING,
+	experiment_id STRING,
+	data DOUBLE,
+	num STRING
+);
+
+CREATE TABLE eeg (
+        id STRING,
+	experiment_id STRING,
+	gnd DOUBLE,
+	ref DOUBLE,
+	afz DOUBLE,
+	af3 DOUBLE,
+	af4 DOUBLE,
+	af7 DOUBLE,
+	af8 DOUBLE,
+	pz DOUBLE,
+	p3 DOUBLE,
+	p4 DOUBLE,
+	num STRING
+);
+
+CREATE TABLE label (
+        id STRING,
+	experiment_id STRING,
+	label STRING,
+	num STRING
+);
