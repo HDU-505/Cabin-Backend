@@ -22,11 +22,11 @@ public class CnosdbUtil {
 
     @PostConstruct
     public void init() {
-        try {
-            connection = getConnection();
-        } catch (SQLException e) {
-            logger.error("Error while getting CnosDB connection: " + e.getMessage(), e);
-        }
+//        try {
+//            connection = getConnection();
+//        } catch (SQLException e) {
+//            logger.error("Error while getting CnosDB connection: " + e.getMessage(), e);
+//        }
     }
 
     private Connection getConnection() throws SQLException {
