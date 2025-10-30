@@ -16,9 +16,9 @@ spring:
       max-request-size: 500MB
   #数据库配置
   datasource:
-    url: jdbc:mysql://47.111.145.107:3306/neurostudent?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=Asia/Shanghai&useSSL=false&characterEncoding=utf8
-    username: root
-    password: 123321
+    url: jdbc:mysql://47.92.113.148:3306/neurostudent?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=Asia/Shanghai&useSSL=false&characterEncoding=utf8
+    username: cabin
+    password: Dzl#010799
     driver-class-name: com.mysql.cj.jdbc.Driver
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
@@ -43,9 +43,9 @@ spring:
       aop-patterns: com.hdu.controller.*,com.hdu.service.*,com.hdu.mapper.*
   # redis配置
   redis:
-    host: 127.0.0.1
+    host: 47.92.113.148
     port: 6379
-    password:
+    password: Dzl010799
 
 #  # nacos配置
 #  cloud:
@@ -69,9 +69,9 @@ logging:
     org.springframework: warn
 
 mqtt:
-  hostUrl: tcp://127.0.0.1:1883
-  username: admin
-  password: admin
+  hostUrl: tcp://47.92.113.148:1883
+  username: cabin
+  password: Dzl010799
   client-id: MQTT-CLIENT-DEV-2
   cleanSession: true
   reconnect: true
