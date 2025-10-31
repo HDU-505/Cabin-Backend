@@ -1,8 +1,9 @@
 package com.hdu.lister;
 
+import com.hdu.experiment.ExperimentState;
+import com.hdu.experiment.ExperimentStateMachine;
 import com.hdu.handler.ResetHandler;
 import com.hdu.service.DataService;
-import com.hdu.utils.experiment.ExperimentStatus;
 import com.hdu.utils.mqtt.MqttAcceptClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,8 +15,6 @@ public class ExperimentStatusChangeListener {
 
     private static final Logger logger = LoggerFactory.getLogger(ExperimentStatusChangeListener.class);
 
-
-
     @Autowired
     private DataService dataService;
 
@@ -25,27 +24,36 @@ public class ExperimentStatusChangeListener {
     @Autowired
     DataLister dataLister;
 
-    public void handleMessage(String message) {
-        String[] parts = message.split(":");
-        String experimentId = parts[0];
-        String status = parts[1];
-        if (ExperimentStatus.WAITING.name().equals(status)){
-            logger.info("实验："+experimentId+"  处于等待状态");
-        }else if (ExperimentStatus.TERMINATED.name().equals(status)){
-            logger.info("实验："+experimentId+"  处于异常终止状态");
-            //进行异常处理过程
-            //通知所有程序重启系统
+    private final ExperimentStateMachine experimentStateMachine = ExperimentStateMachine.getInstance();
+
+    // 实验状态监听器
+    private final ExperimentStateMachine.StateChangeListener experimentStateLister = new ExperimentStateMachine.StateChangeListener() {
+
+        @Override
+        public void onStateChange(ExperimentState oldState, ExperimentState newState) {
+            handleMessage(newState);
+        }
+
+        @Override
+        public void onError(ExperimentState errorState) {
+            handleMessage(errorState);
+        }
+    };
+
+    public ExperimentStatusChangeListener() {
+        experimentStateMachine.addLister(experimentStateLister);
+    }
+
+    public void handleMessage(ExperimentState state) {
+        if (state == ExperimentState.ERROR) {
+            logger.info("实验状态处于异常，重启系统");
             ResetHandler.restart(new String[]{});
-        }else if (ExperimentStatus.STARTED.name().equals(status)) {
-//            dataService.cacheData(experimentId);
-            logger.info("实验："+experimentId+"  处于开始状态");
-            //开始订阅主题
-            //TODO 数据主题暂时以/test代替
+        } else if (state == ExperimentState.RUNNING) {
+            logger.info("实验状态处于运行期，开始订阅MQTT");
             mqttAcceptClient.subscribe("/test",0);
             dataLister.enable();
-        } else if (ExperimentStatus.ENDED.name().equals(status)) {
-//            dataService.storeData(experimentId);
-            logger.info("实验："+experimentId+"  处于结束状态");
+        } else if (state == ExperimentState.ENDED) {
+            logger.info("实验状态处于结束，开始持久化数据");
             mqttAcceptClient.unsubscribe("/test");
             //开始持久化数据
             dataService.dataStoreMySQL();

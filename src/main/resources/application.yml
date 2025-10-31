@@ -82,3 +82,7 @@ mqtt:
   isOpen: true
   qos: 0
 
+# 应用特定信息
+app:
+  name: NeuroStudent-WorkStation
+  instance-id: node-hdu-lab-001

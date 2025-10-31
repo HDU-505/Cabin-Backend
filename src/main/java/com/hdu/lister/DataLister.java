@@ -1,9 +1,8 @@
 package com.hdu.lister;
 
-import com.hdu.config.ExperimentProperties;
 import com.hdu.config.RedisKeyConfig;
-import com.hdu.utils.experiment.ExperimentStatus;
-import com.hdu.utils.experiment.ExperimentStatusManager;
+import com.hdu.exception.ErrorCode;
+import com.hdu.exception.ExperimentException;
 import com.hdu.utils.websocket.ExperimentStatusWebsocketClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,8 +26,7 @@ public class DataLister {
 
     @Autowired
     ExperimentStatusWebsocketClient experimentStatusWebsocketClient;
-    @Autowired
-    ExperimentStatusManager experimentStatusManager;
+
 
 
     @Scheduled(fixedRate = 5000) // 每5秒执行一次
@@ -38,8 +36,7 @@ public class DataLister {
             int newSize = Math.toIntExact(redisTemplate.opsForList().size(RedisKeyConfig.EXPERIMENT_DATA_EEG_KEY));
             //判断是否增加，如果未增加就抛出异常
             if (newSize == lastSize){
-                experimentStatusWebsocketClient.send(ExperimentProperties.experimentId+" "+"TERMINATED");
-                experimentStatusManager.setExperimentStatus(ExperimentProperties.experimentId, ExperimentStatus.TERMINATED);
+                throw new ExperimentException(ErrorCode.EXPERIMENT_ERROR);
             }else {
                 lastSize = newSize;
             }
