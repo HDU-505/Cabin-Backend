@@ -1,12 +1,18 @@
 package com.hdu.utils.websocket;
 
+import com.alibaba.fastjson.JSON;
+import com.hdu.config.AppIdentity;
 import com.hdu.config.ExperimentProperties;
+import com.hdu.experiment.ExperimentState;
+import com.hdu.experiment.ExperimentStateMachine;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -22,6 +28,22 @@ public class ExperimentStatusWebsocketClient extends WebSocketClient {
     private final AtomicInteger reconnectAttempts = new AtomicInteger(0);
     private volatile boolean manualClose = false;
 
+    private ExperimentStateMachine experimentStateMachine = ExperimentStateMachine.getInstance();
+
+    // 实验状态监听器
+    private final ExperimentStateMachine.StateChangeListener experimentStateLister = new ExperimentStateMachine.StateChangeListener() {
+
+        @Override
+        public void onStateChange(ExperimentState oldState, ExperimentState newState) {
+            send(generateExperimentMessage());
+        }
+
+        @Override
+        public void onError(ExperimentState errorState) {
+            send(generateExperimentMessage());
+        }
+    };
+
     public ExperimentStatusWebsocketClient(URI serverUri) {
         super(serverUri);
         this.executor = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -29,13 +51,13 @@ public class ExperimentStatusWebsocketClient extends WebSocketClient {
             t.setDaemon(true);
             return t;
         });
+        experimentStateMachine.addLister(experimentStateLister);
     }
 
     @Override
     public void onOpen(ServerHandshake handshakeData) {
         log.info("------ WebSocketClient onOpen ------");
         reconnectAttempts.set(0); // 重置重连次数
-        sendInitialStatus();
     }
 
     @Override
@@ -57,21 +79,15 @@ public class ExperimentStatusWebsocketClient extends WebSocketClient {
     @Override
     public void onMessage(String message) {
         log.info("-------- 接收到服务端数据： {} --------", message);
-        // 处理接收到的消息
-    }
-
-    /**
-     * 发送初始状态信息
-     */
-    private void sendInitialStatus() {
-        // 如果有实验ID，则发送初始状态消息
-        if (ExperimentProperties.experimentId != null && !ExperimentProperties.experimentId.trim().isEmpty()) {
-            String statusStr = "DEFAULT_STATUS"; // 使用一个默认状态字符串或其他方式获取初始状态
-            String message = ExperimentProperties.experimentId + " " + statusStr;
-            this.send(message);
-            log.info("Sent initial status: {}", message);
-        } else {
-            log.warn("Experiment ID is null or empty.");
+        // 将状态更新到状态机
+        if (message == null) {
+            log.error("状态机消息为空!");
+            return ;
+        }
+        ExperimentStateMessage experimentStateMessage = JSON.parseObject(message,ExperimentStateMessage.class);
+        if (experimentStateMessage != null) {
+            ExperimentProperties.state = experimentStateMessage.getState();
+            log.info("应用：" + experimentStateMessage.getMachineId() + " 实验：" + experimentStateMessage.getExperimentId() + "状态变更为：" + experimentStateMessage.getState());
         }
     }
 
@@ -124,6 +140,12 @@ public class ExperimentStatusWebsocketClient extends WebSocketClient {
     public void shutdown() {
         closeConnection();
         cancelReconnect();
+        experimentStateMachine.removeLister(experimentStateLister);
         log.info("WebSocket client shutdown completed.");
+    }
+
+    private String generateExperimentMessage() {
+        ExperimentStateMessage experimentStateMessage = new ExperimentStateMessage(AppIdentity.getIdentity(),ExperimentProperties.experimentId,ExperimentProperties.state);
+        return JSON.toJSONString(experimentStateMessage);
     }
 }

@@ -6,14 +6,15 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hdu.config.ExperimentProperties;
 import com.hdu.config.RedisKeyConfig;
 import com.hdu.entity.*;
+import com.hdu.experiment.ExperimentEvent;
+import com.hdu.experiment.ExperimentState;
+import com.hdu.experiment.ExperimentStateMachine;
 import com.hdu.mapper.ExperimentMapper;
 import com.hdu.service.IExperimentService;
 import com.hdu.utils.CsvUtils;
 import com.hdu.utils.IdGenerator;
 import com.hdu.utils.ZipUtils;
 import com.hdu.utils.cnosdb.CnosdbUtil;
-import com.hdu.utils.experiment.ExperimentStatus;
-import com.hdu.utils.experiment.ExperimentStatusManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -40,10 +41,9 @@ public class ExperimentServiceImpl extends ServiceImpl<ExperimentMapper, Experim
     RedisTemplate<String,Object> redisTemplate;
 
     @Autowired
-    ExperimentStatusManager experimentStatusManager;
-
-    @Autowired
     CnosdbUtil cnosdbUtil;
+
+    private final ExperimentStateMachine experimentStateMachine = ExperimentStateMachine.getInstance();
 
     /*
     *   获得所有的实验信息
@@ -104,7 +104,7 @@ public class ExperimentServiceImpl extends ServiceImpl<ExperimentMapper, Experim
         redisTemplate.opsForValue().set(RedisKeyConfig.EXPERIMENT_INFO_KEY_PREFIX +experiment.getId(),experiment);
 
         //修改实验状态为“等待”
-        experimentStatusManager.setExperimentStatus(experiment.getId(), ExperimentStatus.WAITING);
+        experimentStateMachine.handleEvent(ExperimentEvent.START_PREPARATION);
 
         //把是否在实验中的状态设定为on
         redisTemplate.opsForValue().set(RedisKeyConfig.EXPERIMENT_ON_OFF_STATUS,"on");
@@ -125,8 +125,8 @@ public class ExperimentServiceImpl extends ServiceImpl<ExperimentMapper, Experim
             return false;
         }
         //判断当前的实验状态是否为“等待”,只能单向转换
-        ExperimentStatus status = experimentStatusManager.getExperimentStatus(experimentId);
-        if (status != ExperimentStatus.WAITING){return false;}
+        ExperimentState currState = experimentStateMachine.getCurrentState();
+        if (currState != ExperimentState.PREPARING){return false;}
 
         //从redis中获取对象
         Experiment experiment = getExperimentByRedis(experimentId);
@@ -143,9 +143,7 @@ public class ExperimentServiceImpl extends ServiceImpl<ExperimentMapper, Experim
         redisTemplate.opsForValue().set(RedisKeyConfig.EXPERIMENT_INFO_KEY_PREFIX+experimentId,experiment);
 
         //更新实验状态为“开始”
-        experimentStatusManager.setExperimentStatus(experimentId,ExperimentStatus.STARTED);
-
-
+        experimentStateMachine.handleEvent(ExperimentEvent.START_EXPERIMENT);
 
         return true;
     }
@@ -161,8 +159,8 @@ public class ExperimentServiceImpl extends ServiceImpl<ExperimentMapper, Experim
          if (experimentId == null || experimentId.trim().isEmpty()) return false;
 
         // 判断当前实验是否处于开始状态
-        ExperimentStatus status = experimentStatusManager.getExperimentStatus(experimentId);
-        if (status != ExperimentStatus.STARTED){return false;}
+        ExperimentState currState = experimentStateMachine.getCurrentState();
+        if (currState != ExperimentState.RUNNING){return false;}
 
         //从redis中获取实验信息
         Experiment experiment = getExperimentByRedis(experimentId);
@@ -175,7 +173,7 @@ public class ExperimentServiceImpl extends ServiceImpl<ExperimentMapper, Experim
         experiment.setEndTime(currentTime);
 
         //更新实验状态为“结束”
-        experimentStatusManager.setExperimentStatus(experimentId,ExperimentStatus.ENDED);
+        experimentStateMachine.handleEvent(ExperimentEvent.END_EXPERIMENT);
 
         //将实验信息存储到数据库
         experimentMapper.insert(experiment);

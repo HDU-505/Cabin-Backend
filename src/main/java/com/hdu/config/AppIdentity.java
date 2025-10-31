@@ -1,18 +1,23 @@
 package com.hdu.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
-@Component
+@Configuration
+@ConfigurationProperties(prefix = "app")
 public class AppIdentity {
+    private static String name;
+    private static String instanceId;
 
-    @Value("${app.name}")
-    private String appName;
+    public void setName(String name) {
+        AppIdentity.name = name;
+    }
 
-    @Value("${app.instance-id}")
-    private String instanceId;
+    public void setInstanceId(String instanceId) {
+        AppIdentity.instanceId = instanceId;
+    }
 
-    public String getIdentity() {
-        return appName + ":" + instanceId;
+    public static String getIdentity() {
+        return name + ":" + instanceId;
     }
 }

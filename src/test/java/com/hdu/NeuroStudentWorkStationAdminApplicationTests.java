@@ -1,23 +1,13 @@
 package com.hdu;
 
 
-import com.hdu.utils.experiment.ExperimentStatus;
 import com.hdu.utils.experiment.ExperimentStatusManager;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 @SpringBootTest
 class NeuroStudentWorkStationAdminApplicationTests {
@@ -28,10 +18,6 @@ class NeuroStudentWorkStationAdminApplicationTests {
     @Autowired
     private WebClient.Builder webClientBuilder;
 
-    @Test
-    void contextLoads() {
-        experimentStatusManager.setExperimentStatus("1", ExperimentStatus.ENDED);
-    }
 
     private static final String URL = "jdbc:arrow-flight-sql://111.231.12.252:8902";
     private static final String USER = "root";
