@@ -172,9 +172,6 @@ public class ExperimentServiceImpl extends ServiceImpl<ExperimentMapper, Experim
         Date currentTime = new Date(System.currentTimeMillis());
         experiment.setEndTime(currentTime);
 
-        //更新实验状态为“结束”
-        experimentStateMachine.handleEvent(ExperimentEvent.END_EXPERIMENT);
-
         //将实验信息存储到数据库
         experimentMapper.insert(experiment);
 
