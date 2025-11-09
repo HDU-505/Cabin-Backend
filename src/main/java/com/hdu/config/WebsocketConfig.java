@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class WebsocketConfig {
-    private final String experimentStatusServerUrl = "ws://127.0.0.1:8888/websocket/experimentStatusServer?username=" + AppIdentity.getIdentity();
+    private final String experimentStatusServerUrl = "ws://localhost:8888/websocket/experimentStatusServer?username=" + AppIdentity.getIdentity();
 
     @Bean
     public ExperimentStatusWebsocketClient experimentStatusServerClient() {

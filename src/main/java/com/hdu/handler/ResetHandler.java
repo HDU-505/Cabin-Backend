@@ -4,8 +4,6 @@ package com.hdu.handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-
 public class ResetHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(ResetHandler.class);
@@ -14,18 +12,20 @@ public class ResetHandler {
     // 发生异常情况，重启本系统
     public static void restart(String[] args){
         // 通过运行时重启
-        try {
-            String java = System.getProperty("java.home") + "/bin/java";
-            String classpath = System.getProperty("java.class.path");
-            String mainClass = "com.hdu.NeuroStudentWorkStationAdminApplication"; // 替换为你的主类
+//        try {
+//            String java = System.getProperty("java.home") + "/bin/java";
+//            String classpath = System.getProperty("java.class.path");
+//            String mainClass = "com.hdu.NeuroStudentWorkStationAdminApplication"; // 替换为你的主类
+//
+//            ProcessBuilder processBuilder = new ProcessBuilder(java, "-cp", classpath, mainClass);
+//            processBuilder.start();
+//        } catch (IOException e) {
+//            logger.error("Failed to restart application", e);
+//        }
+//        // 退出当前进程
+//        System.exit(1);
+        throw new RuntimeException("Restart functionality is disabled for safety reasons.");
 
-            ProcessBuilder processBuilder = new ProcessBuilder(java, "-cp", classpath, mainClass);
-            processBuilder.start();
-        } catch (IOException e) {
-            logger.error("Failed to restart application", e);
-        }
-        // 退出当前进程
-        System.exit(1);
     }
 
     // 打包后的逻辑代码

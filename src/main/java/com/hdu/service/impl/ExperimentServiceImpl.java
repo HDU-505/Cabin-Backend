@@ -6,13 +6,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hdu.config.ExperimentProperties;
 import com.hdu.config.RedisKeyConfig;
 import com.hdu.entity.*;
-import com.hdu.experiment.ExperimentEvent;
-import com.hdu.experiment.ExperimentState;
 import com.hdu.experiment.ExperimentStateMachine;
 import com.hdu.mapper.ExperimentMapper;
 import com.hdu.service.IExperimentService;
 import com.hdu.utils.CsvUtils;
-import com.hdu.utils.IdGenerator;
 import com.hdu.utils.ZipUtils;
 import com.hdu.utils.cnosdb.CnosdbUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,16 +92,16 @@ public class ExperimentServiceImpl extends ServiceImpl<ExperimentMapper, Experim
         }
         //把时间信息完善
         //生成唯一性id
-        experiment.setId(IdGenerator.generate20CharId());
+//        experiment.setId(IdGenerator.generate20CharId());
 
         //将实验id存储到全局变量中
         ExperimentProperties.experimentId = experiment.getId();
 
+        System.out.println("Created experiment with ID: " + experiment.getId());
+
         //把信息存入缓存中
         redisTemplate.opsForValue().set(RedisKeyConfig.EXPERIMENT_INFO_KEY_PREFIX +experiment.getId(),experiment);
 
-        //修改实验状态为“等待”
-        experimentStateMachine.handleEvent(ExperimentEvent.START_PREPARATION);
 
         //把是否在实验中的状态设定为on
         redisTemplate.opsForValue().set(RedisKeyConfig.EXPERIMENT_ON_OFF_STATUS,"on");
@@ -124,9 +121,7 @@ public class ExperimentServiceImpl extends ServiceImpl<ExperimentMapper, Experim
         if (experimentId == null || experimentId.trim().isEmpty()){
             return false;
         }
-        //判断当前的实验状态是否为“等待”,只能单向转换
-        ExperimentState currState = experimentStateMachine.getCurrentState();
-        if (currState != ExperimentState.PREPARING){return false;}
+        System.out.println("Starting experiment with ID: " + experimentId);
 
         //从redis中获取对象
         Experiment experiment = getExperimentByRedis(experimentId);
@@ -142,9 +137,6 @@ public class ExperimentServiceImpl extends ServiceImpl<ExperimentMapper, Experim
         //把新的experiment对象更新到redis
         redisTemplate.opsForValue().set(RedisKeyConfig.EXPERIMENT_INFO_KEY_PREFIX+experimentId,experiment);
 
-        //更新实验状态为“开始”
-        experimentStateMachine.handleEvent(ExperimentEvent.START_EXPERIMENT);
-
         return true;
     }
 
@@ -156,12 +148,9 @@ public class ExperimentServiceImpl extends ServiceImpl<ExperimentMapper, Experim
     @Override
     public boolean endExperiment(String experimentId) {
         //判断是否为空
-         if (experimentId == null || experimentId.trim().isEmpty()) return false;
+        if (experimentId == null || experimentId.trim().isEmpty()) return false;
 
-        // 判断当前实验是否处于开始状态
-        ExperimentState currState = experimentStateMachine.getCurrentState();
-        if (currState != ExperimentState.RUNNING){return false;}
-
+        System.out.println("Ending experiment with ID: " + experimentId);
         //从redis中获取实验信息
         Experiment experiment = getExperimentByRedis(experimentId);
 
