@@ -1,6 +1,7 @@
 package com.hdu.experiment;
 
 import com.hdu.handler.EndHandler;
+import com.hdu.handler.PrepareHandler;
 import com.hdu.handler.ResetHandler;
 import com.hdu.handler.RunningHandler;
 import lombok.extern.slf4j.Slf4j;
@@ -15,16 +16,18 @@ public class ApplicationAutoManager {
     private RunningHandler runningHandler;
     @Resource
     private EndHandler endHandler;
+    @Resource
+    private PrepareHandler prepareHandler;
 
     private final ExperimentStateMachine.StateChangeListener stateChangeListener = new ExperimentStateMachine.StateChangeListener() {
         @Override
-        public void onStateChange(ExperimentState oldState, ExperimentState newState) {
-            handleStateChange(newState);
+        public void onStateChange(ExperimentState oldState, ExperimentState newState,ExperimentEvent event) {
+            handleStateChange(newState,event);
         }
 
         @Override
-        public void onError(ExperimentState errorState) {
-            handleStateChange(errorState);
+        public void onError(ExperimentState errorState,ExperimentEvent event) {
+            handleStateChange(errorState,event);
         }
     };
 
@@ -34,9 +37,14 @@ public class ApplicationAutoManager {
     }
 
     // 处理状态转变逻辑
-    private void handleStateChange(ExperimentState state) {
+    private void handleStateChange(ExperimentState state,ExperimentEvent event) {
         // 根据状态变化执行相应的操作
         switch (state) {
+            case PREPARING: {
+                log.info("实验状态处于准备中，执行准备中逻辑");
+                prepareHandler.handlePrepareState();
+                break;
+            }
             case ERROR: {
                 log.info("实验状态处于异常，重启系统");
                 ResetHandler.restart(new String[]{});

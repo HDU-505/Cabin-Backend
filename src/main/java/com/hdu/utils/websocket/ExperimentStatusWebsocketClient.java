@@ -3,6 +3,7 @@ package com.hdu.utils.websocket;
 import com.alibaba.fastjson.JSON;
 import com.hdu.config.AppIdentity;
 import com.hdu.config.ExperimentProperties;
+import com.hdu.experiment.ExperimentEvent;
 import com.hdu.experiment.ExperimentState;
 import com.hdu.experiment.ExperimentStateMachine;
 import lombok.extern.slf4j.Slf4j;
@@ -34,13 +35,13 @@ public class ExperimentStatusWebsocketClient extends WebSocketClient {
     private final ExperimentStateMachine.StateChangeListener experimentStateLister = new ExperimentStateMachine.StateChangeListener() {
 
         @Override
-        public void onStateChange(ExperimentState oldState, ExperimentState newState) {
-            send(generateExperimentMessage());
+        public void onStateChange(ExperimentState oldState, ExperimentState newState, ExperimentEvent event) {
+            send(generateExperimentMessage(newState,event));
         }
 
         @Override
-        public void onError(ExperimentState errorState) {
-            send(generateExperimentMessage());
+        public void onError(ExperimentState errorState,ExperimentEvent event) {
+            send(generateExperimentMessage(errorState,event));
         }
     };
 
@@ -51,7 +52,7 @@ public class ExperimentStatusWebsocketClient extends WebSocketClient {
             t.setDaemon(true);
             return t;
         });
-        experimentStateMachine.addLister(experimentStateLister);
+//        experimentStateMachine.addLister(experimentStateLister);
     }
 
     @Override
@@ -85,9 +86,13 @@ public class ExperimentStatusWebsocketClient extends WebSocketClient {
             return ;
         }
         ExperimentStateMessage experimentStateMessage = JSON.parseObject(message,ExperimentStateMessage.class);
-        if (experimentStateMessage != null) {
+        if (experimentStateMessage != null && experimentStateMessage.getEvent() != null && experimentStateMessage.getState() != null
+                && experimentStateMessage.getExperiment() != null) {
             ExperimentProperties.state = experimentStateMessage.getState();
-            log.info("应用：" + experimentStateMessage.getMachineId() + " 实验：" + experimentStateMessage.getExperimentId() + "状态变更为：" + experimentStateMessage.getState());
+            ExperimentProperties.experimentId = experimentStateMessage.getExperiment().getId();
+            ExperimentProperties.experiment = experimentStateMessage.getExperiment();
+            ExperimentStateMachine.getInstance().handleEvent(experimentStateMessage.getEvent());
+            log.info("应用：" + experimentStateMessage.getMachineId() + " 实验：" + experimentStateMessage.getExperiment().getId() + "状态变更为：" + experimentStateMessage.getState());
         }
     }
 
@@ -140,12 +145,12 @@ public class ExperimentStatusWebsocketClient extends WebSocketClient {
     public void shutdown() {
         closeConnection();
         cancelReconnect();
-        experimentStateMachine.removeLister(experimentStateLister);
+//        experimentStateMachine.removeLister(experimentStateLister);
         log.info("WebSocket client shutdown completed.");
     }
 
-    private String generateExperimentMessage() {
-        ExperimentStateMessage experimentStateMessage = new ExperimentStateMessage(AppIdentity.getIdentity(),ExperimentProperties.experimentId,ExperimentProperties.state);
+    private String generateExperimentMessage(ExperimentState state,ExperimentEvent event) {
+        ExperimentStateMessage experimentStateMessage = new ExperimentStateMessage(AppIdentity.getIdentity(),ExperimentProperties.state,event,ExperimentProperties.experiment);
         return JSON.toJSONString(experimentStateMessage);
     }
 }

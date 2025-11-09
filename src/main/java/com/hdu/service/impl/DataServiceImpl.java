@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class DataServiceImpl implements DataService {
@@ -229,30 +230,43 @@ public class DataServiceImpl implements DataService {
         // 获取EEG-Redis列表的长度
         Long listSize = redisTemplate.opsForList().size(RedisKeyConfig.EXPERIMENT_DATA_EEG_KEY);
         if (listSize != null && listSize != 0){
-            List<EEG> datas = redisTemplate.opsForList().range(RedisKeyConfig.EXPERIMENT_DATA_EEG_KEY,0,listSize);
+            int chunkSize = 1000; // 每批次处理数量，可根据需要调整
+            int threadCount = (int) Math.ceil((double) listSize / chunkSize);
 
-            eegService.saveBatch(datas);
+            // 创建线程池（最多不超过CPU核心数*2即可，避免过多线程）
+            ExecutorService executorService = Executors.newFixedThreadPool(Math.min(threadCount, 8));
 
-            redisTemplate.opsForValue().set(RedisKeyConfig.EXPERIMENT_ON_OFF_STATUS,"off");
-//            // 定义每个分片的大小
-//            int chunkSize = 1000; // 可根据需要调整
-//
-//            // 计算需要的线程数量
-//            int threadCount = (int) Math.ceil((double) listSize / chunkSize);
-//            // 创建线程池
-//            ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
-//            // 创建和启动线程
-//            for (int i = 0; i < threadCount; i++) {
-//                int start = i * chunkSize;
-//                int end = Math.min((i + 1) * chunkSize - 1, listSize.intValue() - 1);
-//                //开辟新线程持久化EEG数据
-//                executorService.submit(new EEGThread(ExperimentProperties.experimentId, redisTemplate, cnosdbUtil, start, end));
-//            }
-//            // 关闭线程池
-//            executorService.shutdown();
-        }else{
-            logger.info("实验："+ExperimentProperties.experimentId+":no eeg data store");
+            for (int i = 0; i < threadCount; i++) {
+                int start = i * chunkSize;
+                int end = (int) Math.min((i + 1) * chunkSize - 1, listSize - 1);
+
+                executorService.submit(() -> {
+                    List<EEG> batch = redisTemplate.opsForList().range(RedisKeyConfig.EXPERIMENT_DATA_EEG_KEY, start, end);
+                    if (batch != null && !batch.isEmpty()) {
+                        try {
+                            eegService.saveBatch(batch);
+                            logger.info("实验：" + ExperimentProperties.experimentId + " EEG 数据写入成功，范围：" + start + " - " + end);
+                        } catch (Exception e) {
+                            logger.error("实验：" + ExperimentProperties.experimentId + " EEG 数据写入失败，范围：" + start + " - " + end, e);
+                        }
+                    }
+                });
+            }
+
+            // 关闭线程池并等待完成
+            executorService.shutdown();
+            try {
+                executorService.awaitTermination(30, TimeUnit.MINUTES); // 等待线程完成
+            } catch (InterruptedException e) {
+                logger.error("实验：" + ExperimentProperties.experimentId + " EEG 数据写入线程被中断", e);
+                Thread.currentThread().interrupt();
+            }
+
+            redisTemplate.opsForValue().set(RedisKeyConfig.EXPERIMENT_ON_OFF_STATUS, "off");
+        } else {
+            logger.info("实验：" + ExperimentProperties.experimentId + ":no eeg data store");
         }
+
 
 
         // 获取GSR-Redis列表的长度
