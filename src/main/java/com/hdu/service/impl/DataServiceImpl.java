@@ -422,4 +422,12 @@ public class DataServiceImpl implements DataService {
         return map;
     }
 
+    public void cleanDataCache() {
+        redisTemplate.delete(RedisKeyConfig.EXPERIMENT_DATA_EEG_KEY);
+        redisTemplate.delete(RedisKeyConfig.EXPERIMENT_DATA_EOG_KEY);
+        redisTemplate.delete(RedisKeyConfig.EXPERIMENT_DATA_GSR_KEY);
+        redisTemplate.delete(RedisKeyConfig.EXPERIMENT_DATA_HR_KEY);
+        redisTemplate.delete(RedisKeyConfig.EXPERIMENT_DATA_LABEL_KEY);
+    }
+
 }
