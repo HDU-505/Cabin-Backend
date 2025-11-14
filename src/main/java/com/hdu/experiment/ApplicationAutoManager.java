@@ -1,9 +1,6 @@
 package com.hdu.experiment;
 
-import com.hdu.handler.EndHandler;
-import com.hdu.handler.PrepareHandler;
-import com.hdu.handler.ResetHandler;
-import com.hdu.handler.RunningHandler;
+import com.hdu.handler.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +15,8 @@ public class ApplicationAutoManager {
     private EndHandler endHandler;
     @Resource
     private PrepareHandler prepareHandler;
+    @Resource
+    private CleanHandler cleanHandler;
 
     private final ExperimentStateMachine.StateChangeListener stateChangeListener = new ExperimentStateMachine.StateChangeListener() {
         @Override
@@ -58,6 +57,11 @@ public class ApplicationAutoManager {
             case ENDED: {
                 log.info("实验状态处于结束，执行结束逻辑");
                 endHandler.handleEndState();
+                break;
+            }
+            case NOT_STARTED: {
+                log.info("实验状态处于未开始，执行清理逻辑");
+                cleanHandler.handleCleanState();
                 break;
             }
             default: {

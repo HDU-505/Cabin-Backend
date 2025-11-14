@@ -1,7 +1,6 @@
 package com.hdu;
 
 
-import com.hdu.utils.experiment.ExperimentStatusManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,8 +12,8 @@ import reactor.core.publisher.Mono;
 class NeuroStudentWorkStationAdminApplicationTests {
     @Autowired
     RedisTemplate<String,Object> redisTemplate;
-    @Autowired
-    ExperimentStatusManager experimentStatusManager;
+//    @Autowired
+//    ExperimentStatusManager experimentStatusManager;
     @Autowired
     private WebClient.Builder webClientBuilder;
 
