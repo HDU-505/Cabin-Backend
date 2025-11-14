@@ -18,4 +18,6 @@ public interface DataService {
     //数据持久化操作
     public void dataStoreCnosDB();
     public void dataStoreMySQL();
+
+    public void cleanDataCache();
 }
